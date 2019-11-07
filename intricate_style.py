@@ -2,7 +2,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from scipy.misc import imread, imresize, imsave, fromimage, toimage
+from imageio import imread, imwrite
+from skimage.transform import resize
+# from scipy.misc import imread, imresize, imsave
 from scipy.optimize import fmin_l_bfgs_b
 import numpy as np 
 import time
@@ -64,7 +66,7 @@ parser.add_argument("--content_loss_type", default=0, type=int,
 parser.add_argument("--rescale_image", dest="rescale_image", default="False", type=str,
                     help="Rescale image after execution to original dimentions")
 
-parser.add_argument("--rescale_method", dest="rescale_method", default="bilinear", type=str,
+parser.add_argument("--rescale_method", dest="rescale_method", default=1, type=int,
                     help="Rescale image algorithm")
 
 parser.add_argument("--maintain_aspect_ratio", dest="maintain_aspect_ratio", default="True", type=str,
@@ -183,7 +185,7 @@ def preprocess_image(image_path, load_dims=False, read_mode="color"):
         else:
             img_height = args.img_size
 
-    img = imresize(img, (img_width, img_height)).astype('float32')
+    img = resize(img, (img_width, img_height)).astype('float32')
 
     # RGB -> BGR
     img = img[:, :, ::-1]
@@ -214,7 +216,7 @@ def deprocess_image(x):
 def load_mask_sil(invert_sil, shape):
     width, height, _ = shape
     invert_array = np.array(invert_sil.convert('L'))
-    mask = imresize(invert_sil, (width, height), interp='bicubic').astype('float32')
+    mask = resize(invert_sil, (width, height), order=3).astype('float32')
 
     # Perform binarization of mask
     mask[mask <= 127] = 0
@@ -230,11 +232,11 @@ def load_mask_sil(invert_sil, shape):
 # util function to apply mask to generated image
 def mask_content(content_path, generated, mask, bg_color=bg_color):
     content_image = imread(content_path, mode='RGB')
-    content_image = imresize(content_image, (img_width, img_height), interp='bicubic')
+    content_image = resize(content_image, (img_width, img_height), order=3)
     width, height, channels = generated.shape
     if bg_image is not None:
         background_image = imread(bg_image, mode='RGB')
-        background_image = imresize(background_image, (img_width, img_height), interp='bicubic')
+        background_image = resize(background_image, (img_width, img_height), order=3)
         for i in range(width):
             for j in range(height):
                 if mask[i,j] == 0:
@@ -492,11 +494,11 @@ for i in range(num_iter):
     if not rescale_image:
         img_ht = int(img_width * aspect_ratio)
         print("Rescaling Image to (%d, %d)" % (img_width, img_ht))
-        img = imresize(img, (img_width, img_ht), interp=args.rescale_method)
+        img = resize(img, (img_width, img_ht), order=args.rescale_method)
 
     if rescale_image:
         print("Rescaling Image to (%d, %d)" % (img_WIDTH, img_HEIGHT))
-        img = imresize(img, (img_WIDTH, img_HEIGHT), interp=args.rescale_method)
+        img = resize(img, (img_WIDTH, img_HEIGHT), order=args.rescale_method)
     
     if i == num_iter-1:
         fname = result_prefix + "_pattern_output.png"
@@ -504,7 +506,7 @@ for i in range(num_iter):
         mask = load_mask_sil(inverted_silhouette, img.shape)
         final_img = mask_content(base_image_path, img, mask)
         end_time = time.time()
-        imsave(fname, final_img)
+        imwrite(fname, final_img)
         print("Image saved as", fname)
         print("Iteration %d completed in %ds" % (i + 1, end_time - start_time))
 
