@@ -163,7 +163,7 @@ def preprocess_image(image_path, load_dims=False, read_mode="color"):
     global img_width, img_height, img_WIDTH, img_HEIGHT, aspect_ratio
 
     mode = "RGB" if read_mode == "color" else "L"
-    img = imread(image_path, mode=mode)  # Prevents crashes due to PNG images (ARGB)
+    img = imread(image_path, pilmode=mode)  # Prevents crashes due to PNG images (ARGB)
 
     if mode == "L":
         # Expand the 1 channel grayscale to 3 channel grayscale image
@@ -231,11 +231,11 @@ def load_mask_sil(invert_sil, shape):
 
 # util function to apply mask to generated image
 def mask_content(content_path, generated, mask, bg_color=bg_color):
-    content_image = imread(content_path, mode='RGB')
+    content_image = imread(content_path, pilmode='RGB')
     content_image = resize(content_image, (img_width, img_height), order=3)
     width, height, channels = generated.shape
     if bg_image is not None:
-        background_image = imread(bg_image, mode='RGB')
+        background_image = imread(bg_image, pilmode='RGB')
         background_image = resize(background_image, (img_width, img_height), order=3)
         for i in range(width):
             for j in range(height):
